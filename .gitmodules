@@ -1,0 +1,9 @@
+[submodule "proj.game/libs/freetype"]
+	path = proj.game/libs/freetype
+	url = https://github.com/freetype/freetype
+[submodule "proj.android/proj.game/glm"]
+	path = proj.android/proj.game/glm
+	url = https://github.com/g-truc/glm
+[submodule "proj.game/libs/glm"]
+	path = proj.game/libs/glm
+	url = https://github.com/g-truc/glm

@@ -1,0 +1,2 @@
+rootProject.name = "Goumz And Stuff"
+include ':app'
