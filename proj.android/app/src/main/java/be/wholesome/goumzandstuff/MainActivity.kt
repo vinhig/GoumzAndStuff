@@ -6,6 +6,8 @@ import android.content.pm.ActivityInfo
 import android.content.res.AssetManager
 import android.opengl.GLSurfaceView
 import android.os.Bundle
+import android.util.Log
+import android.view.MotionEvent
 import android.view.View
 import javax.microedition.khronos.egl.EGLConfig
 import javax.microedition.khronos.opengles.GL10
@@ -37,6 +39,10 @@ class MyGLSurfaceView(context: Context) : GLSurfaceView(context) {
 
     private val renderer: MyGLRenderer
 
+    external fun onZoom(delta : Float)
+
+    external fun onTouch(x : Float, y: Float)
+
     init {
         debugFlags = GLSurfaceView.DEBUG_CHECK_GL_ERROR or GLSurfaceView.DEBUG_LOG_GL_CALLS
 
@@ -47,6 +53,18 @@ class MyGLSurfaceView(context: Context) : GLSurfaceView(context) {
 
         // Set the Renderer for drawing on the GLSurfaceView
         setRenderer(renderer)
+    }
+
+    override fun onTouchEvent(event: MotionEvent): Boolean {
+        if (event.pointerCount == 0) {
+            onTouch(event.getX(0), event.getY(0))
+        } else if (event.pointerCount == 2) {
+            // compute zoom ratio from two pointers
+            val zoomRatio = (event.getX(1) - event.getX(0)) / (event.getY(1) - event.getY(0))
+            onZoom(zoomRatio)
+        }
+
+        return super.onTouchEvent(event)
     }
 }
 
