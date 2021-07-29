@@ -1,3 +1,6 @@
+
+#include <glm/mat4x4.hpp>
+
 namespace GoumzAndStuff {
 
 class Game;
@@ -27,8 +30,9 @@ class World {
   unsigned int _vao;
   unsigned int _quad;
 
+  // glm::mat4 _projection;
   float _projection[4][4];
-  float _view[4][4];
+  // float _isometric_view[2][2];
 
   unsigned int _projection_uniform;
   unsigned int _view_uniform;

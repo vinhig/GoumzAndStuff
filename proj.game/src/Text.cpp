@@ -44,10 +44,8 @@ Text::~Text() {
 }
 
 void Text::draw() {
-  /*glBindFramebuffer(GL_READ_FRAMEBUFFER, _framebuffer);
   glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
-  glBlitFramebuffer(0, 0, _width, _height, _x, _y, _x + _width, _y + _height,
-                    GL_COLOR_BUFFER_BIT, GL_NEAREST);*/
+  
   glBindVertexArray(_font->quad());
   glUseProgram(_font->div_shader());
   glBindTexture(GL_TEXTURE_2D, _pre_drawn);
@@ -130,7 +128,6 @@ void Text::pre_draw() {
   // draw text
   glUseProgram(_font->text_shader());
 
-  // glBindBuffer(GL_ARRAY_BUFFER, _font->quad());
   glBindVertexArray(_font->quad());
 
   float total_advance = 0.0f;
@@ -146,7 +143,8 @@ void Text::pre_draw() {
     float scale[2] = {(float)character.width, (float)character.height};
     float pos[2] = {
         (total_advance + (float)character.bearing_x),
-        ((float)(character.height) - (float)character.bearing_y) * -1.0f + 64.0f};
+        ((float)(character.height) - (float)character.bearing_y) * -1.0f +
+            64.0f};
 
     total_advance += character.advance;
 
@@ -176,6 +174,11 @@ void Text::set_color(float r, float g, float b, float a) {
   _color[2] = b;
   _color[3] = a;
 
+  _dirty = true;
+}
+
+void Text::set_text(const std::wstring& text) {
+  _text = text;
   _dirty = true;
 }
 

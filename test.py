@@ -1,0 +1,1 @@
+def print_norm_iso_27001

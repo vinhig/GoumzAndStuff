@@ -3,6 +3,7 @@
 #include <GLES3/gl3.h>
 
 #include <cstring>
+#include <glm/gtx/transform.hpp>
 
 #include "Game.hpp"
 #include "Math.hpp"
@@ -17,14 +18,31 @@ World::World(Game* _used_game) {
   float half_width = static_cast<float>(_game->screen_width()) / 2.0f;
   float half_height = static_cast<float>(_game->screen_height()) / 2.0f;
 
-  Math::ortho_proj(-half_height, half_height, -half_width, half_width, 0.0f,
-                   1.0f, _projection);
+  /*_projection =
+      glm::ortho(-half_width / 100.0f, half_width / 100.0f,
+                 -half_height / 100.0f, half_height / 100.0f, -100.0f, 100.0f) *
+      glm::lookAt(glm::vec3(1.0f, -1.0f, 1.0f), glm::vec3(0.0f, 0.0f, 0.0f),
+                  glm::vec3(0.0f, -1.0f, 0.0f));*/
+  auto a =
+      glm::ortho(-half_width / 100.0f, half_width / 100.0f,
+                 -half_height / 100.0f, half_height / 100.0f, -100.0f, 100.0f);
+  auto b =
+      glm::lookAt(glm::vec3(1.0f, -1.0f, 1.0f), glm::vec3(0.0f, 0.0f, 0.0f),
+                  glm::vec3(0.0f, -1.0f, 0.0f));
 
-  float eye[3] = {1.0f, 1.0f, 1.0f};
-  float target[3] = {0.0f, 0.0f, 0.0f};
-  float up[3] = {0.0f, 1.0f, 0.0f};
-  Math::look_at(eye, target, up, _view);
+  float aa[4][4];
+  float bb[4][4];
 
+  for (int i = 0; i < 4; ++i) {
+    for (int j = 0; j < 4; ++j) {
+      aa[i][j] = a[i][j];
+      bb[i][j] = b[i][j];
+    }
+  }
+
+  Math::matrix_multiply(aa, bb, _projection);
+
+  int f = 2;
   {
     auto vertex_shader_source =
         (char*)(_used_game->read_file("shaders/tile_shader.vert.glsl").data);
@@ -47,7 +65,7 @@ World::World(Game* _used_game) {
 
   _pos_uniform = glGetUniformLocation(_tile_shader, "pos");
   _projection_uniform = glGetUniformLocation(_tile_shader, "projection");
-  _view_uniform = glGetUniformLocation(_tile_shader, "view");
+  // _view_uniform = glGetUniformLocation(_tile_shader, "view");
 
   glGenFramebuffers(1, &_framebuffer);
   glBindFramebuffer(GL_FRAMEBUFFER, _framebuffer);
@@ -108,13 +126,21 @@ World::World(Game* _used_game) {
   delete current_texture.data;
 
   // clang-format off
-  float vertices[] = {
+  /*float vertices[] = {
     -64.0f, 64.0f, 0.0f, 0.0f,
     64.0f, 64.0f, 1.0f, 0.0f,
     -64.0f, -64.0f, 0.0f, 1.0f,
     64.0f, 64.0f, 1.0f, 0.0f,
     64.0f, -64.0f, 1.0f, 1.0f,
     -64.0f, -64.0f, 0.0f, 1.0f,
+  };*/
+  float vertices[] = {
+    -1.0f, 1.0f, 0.0f, 0.0f,
+    1.0f, 1.0f, 1.0f, 0.0f,
+    -1.0f, -1.0f, 0.0f, 1.0f,
+    1.0f, 1.0f, 1.0f, 0.0f,
+    1.0f, -1.0f, 1.0f, 1.0f,
+    -1.0f, -1.0f, 0.0f, 1.0f,
   };
   // clang-format on
 
@@ -138,7 +164,10 @@ World::World(Game* _used_game) {
   glBindBuffer(GL_ARRAY_BUFFER, 0);
 }
 
-World::~World() {}
+World::~World() {
+  // delete all tile textures
+  glDeleteTextures(9, _tile_textures);
+}
 
 void World::pre_draw() {
   glBindFramebuffer(GL_FRAMEBUFFER, _framebuffer);
@@ -150,9 +179,8 @@ void World::pre_draw() {
   glBindVertexArray(_vao);
 
   glUniformMatrix4fv(_projection_uniform, 1, false, &_projection[0][0]);
-  glUniformMatrix4fv(_view_uniform, 1, false, &_view[0][0]);
 
-  float pos[2] = {-8.0f * 128.0f, -8.0f * 128.0f};
+  float pos[2] = {-8.0f * 2.1f, -8.0f * 2.1f};
 
   for (unsigned int x = 0; x < 16; x++) {
     for (unsigned int y = 0; y < 16; y++) {
@@ -162,15 +190,22 @@ void World::pre_draw() {
 
       glDrawArrays(GL_TRIANGLES, 0, 6);
 
-      pos[1] += 128.0f;
+      pos[1] += 2.1f;
     }
 
-    pos[1] = -8.0f * 128.0f;
-    pos[0] += 128.0f;
+    pos[1] = -8.0f * 2.1f;
+    pos[0] += 2.1f;
   }
 }
 
-void World::draw() {}
+void World::draw() {
+  glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
+  glBindFramebuffer(GL_READ_FRAMEBUFFER, _framebuffer);
+
+  glBlitFramebuffer(0, 0, _game->screen_width(), _game->screen_height(), 0, 0,
+                    _game->screen_width(), _game->screen_height(),
+                    GL_COLOR_BUFFER_BIT, GL_LINEAR);
+}
 
 void World::set_tile(unsigned int x, unsigned y, TileType new_type) {
   _tiles[x][y] = new_type;

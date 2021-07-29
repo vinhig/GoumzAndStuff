@@ -6,12 +6,12 @@ layout(location = 1) in vec2 tex_coord;
 uniform vec2 pos;
 
 uniform mat4 projection;
-uniform mat4 view;
 
 out vec2 o_tex_coord;
 
 void main() {
-  gl_Position = projection * vec4(position + pos, 0.0, 1.0);
+  vec2 new_pos = position + pos;
+  gl_Position = projection * vec4(new_pos.x, 0.0, new_pos.y, 1.0);
   o_tex_coord = tex_coord;
 }
 //

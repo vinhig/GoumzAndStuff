@@ -54,6 +54,7 @@ class Text {
   void set_rotation(float angle);
   void set_position(unsigned int x, unsigned int y);
   void set_color(float r, float g, float b, float a);
+  void set_text(const std::wstring& text);
 };
 
 }  // namespace Rendering

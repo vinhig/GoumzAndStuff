@@ -9,6 +9,7 @@ add_library(GoumzAndStuffGame SHARED
   src/Math.cpp
   src/OpenGLUtils.cpp
   src/World.cpp
+  src/Input.cpp
   libs/stb/stb_image.c)
 
 add_subdirectory(libs/freetype)

@@ -8,14 +8,17 @@
 
 #include <GLES3/gl32.h>
 
+#include <chrono>
 #include <cmath>
 #include <cstring>
+#include <ctime>
 #include <string>
 #include <unordered_map>
 #include <vector>
 
 #include "Font.hpp"
 #include "Game.hpp"
+#include "Input.hpp"
 #include "Log.hpp"
 #include "Text.hpp"
 #include "World.hpp"
@@ -48,6 +51,20 @@ Java_be_wholesome_goumzandstuff_MainActivity_setAssetManager(
     JNIEnv *env, jobject thiz, jobject asset_manager) {
   g_AssetManager = AAssetManager_fromJava(env, asset_manager);
 }
+extern "C" JNIEXPORT void JNICALL
+Java_be_wholesome_goumzandstuff_MyGLSurfaceView_onZoom(JNIEnv *env,
+                                                       jobject thiz,
+                                                       jfloat delta) {
+  g_Game.input_manager()->zoom(static_cast<float>(delta));
+}
+
+extern "C" JNIEXPORT void JNICALL
+Java_be_wholesome_goumzandstuff_MyGLSurfaceView_onTouch(JNIEnv *env,
+                                                        jobject thiz, jfloat x,
+                                                        jfloat y) {
+  g_Game.input_manager()->touch(static_cast<float>(x), static_cast<float>(y));
+}
+
 #endif
 
 static void debug_output(GLenum source, GLenum type, GLuint id, GLenum severity,
@@ -98,6 +115,12 @@ void Game::create() {
   // Dummy font loading
   _default_font = new Rendering::Font(this, "chubby.ttf");
 
+  _frame_time_label =
+      new Rendering::Text(this, _default_font, L"super long placeholder");
+  _frame_time_label->set_position(0.0f, 0.0f);
+  // set color of frame time label to black
+  _frame_time_label->set_color(0.0f, 0.0f, 0.0f, 1.0f);
+
   _dummy_text1 = new Rendering::Text(this, _default_font,
                                      L"Salut tout le monde, poudre aux yeux?!");
 
@@ -128,11 +151,23 @@ void Game::create() {
   _dummy_text6->set_color(0.0f, 0.3f, 0.7f, 1.0f);
 
   _world = new Rendering::World(this);
+
+  _last_time = std::chrono::duration_cast<std::chrono::microseconds>(
+                   std::chrono::system_clock::now().time_since_epoch())
+                   .count();
 }
 
 void Game::reload() {}
 
 void Game::draw_frame() {
+  glBindFramebuffer(GL_FRAMEBUFFER, 0);
+  glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
+  glClear(GL_COLOR_BUFFER_BIT);
+
+  _world->pre_draw();
+  _world->draw();
+  _frame_time_label->pre_draw();
+
   if (_dummy_text1->dirty()) {
     _dummy_text1->pre_draw();
   }
@@ -151,13 +186,6 @@ void Game::draw_frame() {
   if (_dummy_text6->dirty()) {
     _dummy_text6->pre_draw();
   }
-
-  _world->pre_draw();
-  _world->draw();
-
-  glBindFramebuffer(GL_FRAMEBUFFER, 0);
-  glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
-  glClear(GL_COLOR_BUFFER_BIT);
 
   _dummy_text5->set_color(abs(sin(_frame)), abs(cos(_frame)),
                           1.0f - abs(sin(_frame)), 1.0f);
@@ -181,9 +209,18 @@ void Game::draw_frame() {
   _dummy_text6->set_rotation(_frame * 3.0f);
   _dummy_text6->draw();
 
-  for (auto const &el : _default_font->characters()) {
-    glBindTexture(GL_TEXTURE_2D, el.second.texture);
-  }
+  _frame_time_label->set_text(std::to_wstring(_frame_time) + L"ms");
+  _frame_time_label->draw();
+
+  // compute frame time
+  auto now = std::chrono::duration_cast<std::chrono::microseconds>(
+                 std::chrono::system_clock::now().time_since_epoch())
+                 .count();
+  auto frame_time = now - _last_time;
+  _last_time = now;
+
+  // convert frame time to millisends
+  _frame_time = static_cast<float>(frame_time / 1000.0f);
 
   glFinish();
 }
@@ -193,5 +230,7 @@ void Game::exit() {}
 unsigned int Game::screen_width() { return _screen_width; }
 
 unsigned int Game::screen_height() { return _screen_height; }
+
+Input *Game::input_manager() { return _input_manager; }
 
 }  // namespace GoumzAndStuff
