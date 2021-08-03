@@ -8,6 +8,12 @@
 
 #include <GLES3/gl32.h>
 
+extern "C" {
+#include <lua/lauxlib.h>
+#include <lua/lua.h>
+#include <lua/lualib.h>
+}
+
 #include <chrono>
 #include <cmath>
 #include <cstring>
@@ -22,6 +28,10 @@
 #include "Log.hpp"
 #include "Text.hpp"
 #include "World.hpp"
+
+extern "C" {
+int luaopen_GoumzAndStuff(lua_State *L);
+}
 
 #ifdef __ANDROID__
 
@@ -51,11 +61,28 @@ Java_be_wholesome_goumzandstuff_MainActivity_setAssetManager(
     JNIEnv *env, jobject thiz, jobject asset_manager) {
   g_AssetManager = AAssetManager_fromJava(env, asset_manager);
 }
+
+extern "C" JNIEXPORT void JNICALL
+Java_be_wholesome_goumzandstuff_MyGLSurfaceView_onZoomStart(JNIEnv *env,
+                                                            jobject thiz) {
+  GoumzAndStuff::Log::debug("zooooom");
+  g_Game.input_manager()->zoom_start();
+}
+
 extern "C" JNIEXPORT void JNICALL
 Java_be_wholesome_goumzandstuff_MyGLSurfaceView_onZoom(JNIEnv *env,
                                                        jobject thiz,
                                                        jfloat delta) {
+  GoumzAndStuff::Log::debug("zooooom");
   g_Game.input_manager()->zoom(static_cast<float>(delta));
+}
+
+extern "C" JNIEXPORT void JNICALL
+Java_be_wholesome_goumzandstuff_MyGLSurfaceView_onZoomStop(JNIEnv *env,
+                                                           jobject thiz,
+                                                           jfloat delta) {
+  GoumzAndStuff::Log::debug("zooooom");
+  g_Game.input_manager()->zoom_stop(static_cast<float>(delta));
 }
 
 extern "C" JNIEXPORT void JNICALL
@@ -65,7 +92,25 @@ Java_be_wholesome_goumzandstuff_MyGLSurfaceView_onTouch(JNIEnv *env,
   g_Game.input_manager()->touch(static_cast<float>(x), static_cast<float>(y));
 }
 
+extern "C" JNIEXPORT void JNICALL
+Java_be_wholesome_goumzandstuff_MyGLSurfaceView_onDrag(JNIEnv *env,
+                                                       jobject thiz, jfloat x,
+                                                       jfloat y) {
+  // TODO: implement onDrag()
+}
+
+GoumzAndStuff::Game *get_game() { return &g_Game; }
+
 #endif
+
+// default error handling function for lua printing with Log
+static int lua_error_handler(lua_State *L) {
+  const char *msg = lua_tostring(L, 1);
+  if (msg) {
+    GoumzAndStuff::Log::error(msg);
+  }
+  return 1;
+}
 
 static void debug_output(GLenum source, GLenum type, GLuint id, GLenum severity,
                          GLsizei length, const GLchar *message,
@@ -150,11 +195,25 @@ void Game::create() {
   _dummy_text6->set_position(1200, 100);
   _dummy_text6->set_color(0.0f, 0.3f, 0.7f, 1.0f);
 
+  _input_manager = new Input();
+
   _world = new Rendering::World(this);
 
   _last_time = std::chrono::duration_cast<std::chrono::microseconds>(
                    std::chrono::system_clock::now().time_since_epoch())
                    .count();
+
+  lua_State *L = luaL_newstate();
+  luaopen_base(L);
+
+  luaL_openlibs(L);
+  luaopen_GoumzAndStuff(L);
+
+  auto script = read_file("scripts/main_game.lua");
+
+  luaL_loadbuffer(L, (const char *)script.data, script.size,
+                  (const char *)script.data);
+  lua_call(L, 0, 0);
 }
 
 void Game::reload() {}
@@ -222,7 +281,7 @@ void Game::draw_frame() {
   // convert frame time to millisends
   _frame_time = static_cast<float>(frame_time / 1000.0f);
 
-  glFinish();
+  // glFinish();
 }
 
 void Game::exit() {}
@@ -230,6 +289,8 @@ void Game::exit() {}
 unsigned int Game::screen_width() { return _screen_width; }
 
 unsigned int Game::screen_height() { return _screen_height; }
+
+Rendering::World *Game::get_world() { return _world; }
 
 Input *Game::input_manager() { return _input_manager; }
 

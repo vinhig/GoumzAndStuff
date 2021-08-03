@@ -54,17 +54,16 @@ void rotation_matrix(const float &angle, float matrix[4][4]) {
  * @param result Output matrix.
  * @return None.
  */
-void matrix_multiply_NEON(const float a[4][4], const float b[4][4],
-                          float result[4][4]) {
-  float32x4_t a0 = vld1q_f32(&a[0][0]);
-  float32x4_t a1 = vld1q_f32(&a[1][0]);
-  float32x4_t a2 = vld1q_f32(&a[2][0]);
-  float32x4_t a3 = vld1q_f32(&a[3][0]);
+void matrix_multiply_NEON(const float *a, const float *b, float *result) {
+  float32x4_t a0 = vld1q_f32(a);
+  float32x4_t a1 = vld1q_f32(a + 4);
+  float32x4_t a2 = vld1q_f32(a + 8);
+  float32x4_t a3 = vld1q_f32(a + 12);
 
-  float32x4_t b0 = vld1q_f32(&b[0][0]);
-  float32x4_t b1 = vld1q_f32(&b[1][0]);
-  float32x4_t b2 = vld1q_f32(&b[2][0]);
-  float32x4_t b3 = vld1q_f32(&b[3][0]);
+  float32x4_t b0 = vld1q_f32(b);
+  float32x4_t b1 = vld1q_f32(b + 4);
+  float32x4_t b2 = vld1q_f32(b + 8);
+  float32x4_t b3 = vld1q_f32(b + 12);
 
   float32x4_t r0 = vmovq_n_f32(0);
   float32x4_t r1 = vmovq_n_f32(0);
@@ -75,25 +74,25 @@ void matrix_multiply_NEON(const float a[4][4], const float b[4][4],
   r0 = vmlaq_f32(r0, a1, b0);
   r0 = vmlaq_f32(r0, a2, b0);
   r0 = vmlaq_f32(r0, a3, b0);
-  vst1q_f32(&result[0][0], r0);
+  vst1q_f32(result, r0);
 
   r1 = vmlaq_f32(r1, a0, b1);
   r1 = vmlaq_f32(r1, a1, b1);
   r1 = vmlaq_f32(r1, a2, b1);
   r1 = vmlaq_f32(r1, a3, b1);
-  vst1q_f32(&result[1][0], r1);
+  vst1q_f32(result + 4, r1);
 
   r2 = vmlaq_f32(r2, a0, b2);
   r2 = vmlaq_f32(r2, a1, b2);
   r2 = vmlaq_f32(r2, a2, b2);
   r2 = vmlaq_f32(r2, a3, b2);
-  vst1q_f32(&result[2][0], r2);
+  vst1q_f32(result + 8, r2);
 
   r3 = vmlaq_f32(r3, a0, b3);
   r3 = vmlaq_f32(r3, a1, b3);
   r3 = vmlaq_f32(r3, a2, b3);
   r3 = vmlaq_f32(r3, a3, b3);
-  vst1q_f32(&result[3][0], r3);
+  vst1q_f32(result + 12, r3);
 }
 #else
 /**
@@ -103,10 +102,9 @@ void matrix_multiply_NEON(const float a[4][4], const float b[4][4],
  * @param result Output matrix.
  * @return None.
  */
-void matrix_multiply_SSE(const float a[4][4], const float b[4][4],
-                         float result[4][4]) {
-  Log::debug("salut SIMD");
-  __m128 a0 = _mm_loadu_ps(&a[0][0]);
+void matrix_multiply_SSE(const float *a, const float *b, float *result) {
+  Log::error("no implemented!");
+  /*__m128 a0 = _mm_loadu_ps(&a[0][0]);
   __m128 a1 = _mm_loadu_ps(&a[1][0]);
   __m128 a2 = _mm_loadu_ps(&a[2][0]);
   __m128 a3 = _mm_loadu_ps(&a[3][0]);
@@ -121,7 +119,7 @@ void matrix_multiply_SSE(const float a[4][4], const float b[4][4],
   _mm_storeu_ps(&result[0][0], r0);
   _mm_storeu_ps(&result[1][0], r1);
   _mm_storeu_ps(&result[2][0], r2);
-  _mm_storeu_ps(&result[3][0], r3);
+  _mm_storeu_ps(&result[3][0], r3);*/
 }
 #endif
 
@@ -131,8 +129,7 @@ void matrix_multiply_SSE(const float a[4][4], const float b[4][4],
  * @param b Second matrix.
  * @param matrix Output matrix.
  */
-void matrix_multiply(const float a[4][4], const float b[4][4],
-                     float matrix[4][4]) {
+void matrix_multiply(const float *a, const float *b, float *matrix) {
 #if defined(__ARM_NEON)
   matrix_multiply_NEON(a, b, matrix);
 #else

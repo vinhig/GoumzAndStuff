@@ -6,6 +6,7 @@
 #include <glm/gtx/transform.hpp>
 
 #include "Game.hpp"
+#include "Input.hpp"
 #include "Math.hpp"
 #include "OpenGLUtils.hpp"
 
@@ -15,32 +16,22 @@ namespace Rendering {
 World::World(Game* _used_game) {
   _game = _used_game;
 
-  float half_width = static_cast<float>(_game->screen_width()) / 2.0f;
-  float half_height = static_cast<float>(_game->screen_height()) / 2.0f;
+  _half_width = static_cast<float>(_game->screen_width()) / 2.0f;
+  _half_height = static_cast<float>(_game->screen_height()) / 2.0f;
 
   /*_projection =
       glm::ortho(-half_width / 100.0f, half_width / 100.0f,
                  -half_height / 100.0f, half_height / 100.0f, -100.0f, 100.0f) *
       glm::lookAt(glm::vec3(1.0f, -1.0f, 1.0f), glm::vec3(0.0f, 0.0f, 0.0f),
                   glm::vec3(0.0f, -1.0f, 0.0f));*/
-  auto a =
-      glm::ortho(-half_width / 100.0f, half_width / 100.0f,
-                 -half_height / 100.0f, half_height / 100.0f, -100.0f, 100.0f);
+  auto a = glm::ortho(-_half_width / 100.0f, _half_width / 100.0f,
+                      -_half_height / 100.0f, _half_height / 100.0f, -100.0f,
+                      100.0f);
   auto b =
       glm::lookAt(glm::vec3(1.0f, -1.0f, 1.0f), glm::vec3(0.0f, 0.0f, 0.0f),
                   glm::vec3(0.0f, -1.0f, 0.0f));
 
-  float aa[4][4];
-  float bb[4][4];
-
-  for (int i = 0; i < 4; ++i) {
-    for (int j = 0; j < 4; ++j) {
-      aa[i][j] = a[i][j];
-      bb[i][j] = b[i][j];
-    }
-  }
-
-  Math::matrix_multiply(aa, bb, _projection);
+  Math::matrix_multiply(&a[0][0], &b[0][0], &_projection[0][0]);
 
   int f = 2;
   {
@@ -162,6 +153,27 @@ World::World(Game* _used_game) {
   glBindBuffer(GL_ARRAY_BUFFER, _quad);
   glVertexAttribPointer(1, 2, GL_FLOAT, false, 4 * 4, (const void*)(2 * 4));
   glBindBuffer(GL_ARRAY_BUFFER, 0);
+
+  _move_camera_handler = new InputHandler();
+
+  _move_camera_handler->handle_zoom();
+  _move_camera_handler->set_zoom_callback([this](ZoomState state, float zoom) {
+    if (state == ZOOM_STOP) {
+      _last_zoom *= zoom;
+    } else if (state == ZOOM_MIDDLE) {
+      auto a = glm::ortho(-_half_width / 100.0f * _last_zoom * zoom,
+                          _half_width / 100.0f * _last_zoom * zoom,
+                          -_half_height / 100.0f * _last_zoom * zoom,
+                          _half_height / 100.0f * _last_zoom * zoom, -100.0f,
+                          100.0f);
+      auto b =
+          glm::lookAt(glm::vec3(1.0f, -1.0f, 1.0f), glm::vec3(0.0f, 0.0f, 0.0f),
+                      glm::vec3(0.0f, -1.0f, 0.0f));
+
+      Math::matrix_multiply(&a[0][0], &b[0][0], &_projection[0][0]);
+    }
+  });
+  _used_game->input_manager()->register_handler(_move_camera_handler);
 }
 
 World::~World() {
@@ -182,8 +194,8 @@ void World::pre_draw() {
 
   float pos[2] = {-8.0f * 2.1f, -8.0f * 2.1f};
 
-  for (unsigned int x = 0; x < 16; x++) {
-    for (unsigned int y = 0; y < 16; y++) {
+  for (auto x = 0; x < 16; x++) {
+    for (auto y = 0; y < 16; y++) {
       glBindTexture(GL_TEXTURE_2D, _tile_textures[_tiles[x][y]]);
 
       glUniform2fv(_pos_uniform, 1, &pos[0]);

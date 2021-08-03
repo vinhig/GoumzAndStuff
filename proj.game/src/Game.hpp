@@ -59,6 +59,8 @@ class Game {
   unsigned int screen_width();
   unsigned int screen_height();
 
+  Rendering::World* get_world();
+
   Input* input_manager();
 };
 

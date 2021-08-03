@@ -10,10 +10,23 @@ Input::Input() {}
 
 Input::~Input() {}
 
+void Input::zoom_start() {
+  for (auto const& handler : _zoom_handlers) {
+    handler->notify_zoom_start();
+  }
+}
+
 void Input::zoom(float delta) {
   Log::debug("Zooming " + std::to_string(delta) + "...");
-  for (auto const& handler : _touch_handlers) {
+  for (auto const& handler : _zoom_handlers) {
+    Log::debug("notifyyyyy");
     handler->notify_zoom(delta);
+  }
+}
+
+void Input::zoom_stop(float delta) {
+  for (auto const& handler : _zoom_handlers) {
+    handler->notify_zoom_stop(delta);
   }
 }
 
@@ -59,14 +72,24 @@ void InputHandler::handle_touch() { _handle_touch = true; }
 bool InputHandler::listen_for_zoom() { return _handle_zoom; }
 bool InputHandler::listen_for_touch() { return _handle_touch; }
 
-void InputHandler::notify_zoom(float delta) { _zoom_callback(delta); }
+void InputHandler::notify_zoom_start() {
+  _zoom_callback(ZoomState::ZOOM_START, 1.0f);
+}
+void InputHandler::notify_zoom(float delta) {
+  _zoom_callback(ZoomState::ZOOM_MIDDLE, delta);
+}
+void InputHandler::notify_zoom_stop(float delta) {
+  _zoom_callback(ZoomState::ZOOM_STOP, delta);
+}
+
 void InputHandler::notify_touch(float x, float y) { _touch_callback(x, y); }
 
-void InputHandler::set_zoom_callback(std::function<void(float)>& callback) {
+void InputHandler::set_zoom_callback(
+    std::function<void(ZoomState, float)> const& callback) {
   _zoom_callback = callback;
 }
 void InputHandler::set_touch_callback(
-    std::function<void(float, float)>& callback) {
+    std::function<void(float, float)> const& callback) {
   _touch_callback = callback;
 }
 

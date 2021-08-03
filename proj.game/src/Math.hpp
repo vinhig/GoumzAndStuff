@@ -18,8 +18,7 @@ void rotation_matrix(const float &angle, float matrix[4][4]);
  * @param b Second matrix.
  * @param matrix Output matrix.
  */
-void matrix_multiply(const float a[4][4], const float b[4][4],
-                     float matrix[4][4]);
+void matrix_multiply(const float *a, const float *b, float* matrix);
 
 }  // namespace Math
 

@@ -9,8 +9,11 @@ import android.os.Bundle
 import android.util.Log
 import android.view.MotionEvent
 import android.view.View
+import androidx.core.view.MotionEventCompat
 import javax.microedition.khronos.egl.EGLConfig
 import javax.microedition.khronos.opengles.GL10
+import kotlin.math.pow
+import kotlin.math.sqrt
 
 
 class MyGLRenderer : GLSurfaceView.Renderer {
@@ -39,9 +42,19 @@ class MyGLSurfaceView(context: Context) : GLSurfaceView(context) {
 
     private val renderer: MyGLRenderer
 
-    external fun onZoom(delta : Float)
+    private var zooming: Boolean = false
+    private var oldDistance: Float = 0.0f
+    private var currentZoomRatio: Float = 0.0f
 
-    external fun onTouch(x : Float, y: Float)
+    private var lastAction: Int = 0
+
+    external fun onZoomStart()
+    external fun onZoom(delta: Float)
+    external fun onZoomStop(delta: Float)
+
+    external fun onTouch(x: Float, y: Float)
+
+    external fun onDrag(x : Float, y: Float)
 
     init {
         debugFlags = GLSurfaceView.DEBUG_CHECK_GL_ERROR or GLSurfaceView.DEBUG_LOG_GL_CALLS
@@ -56,16 +69,55 @@ class MyGLSurfaceView(context: Context) : GLSurfaceView(context) {
     }
 
     override fun onTouchEvent(event: MotionEvent): Boolean {
-        if (event.pointerCount == 0) {
-            onTouch(event.getX(0), event.getY(0))
+
+        if (event.pointerCount == 1) {
+            if (zooming) {
+                onZoomStop(currentZoomRatio)
+                zooming = false
+            }
+            val action: Int = MotionEventCompat.getActionMasked(event)
+
+            when(action) {
+                MotionEvent.ACTION_DOWN -> {
+                    lastAction = MotionEvent.ACTION_DOWN
+                }
+                MotionEvent.ACTION_MOVE -> {
+                    lastAction = MotionEvent.ACTION_DOWN
+                    onDrag(event.x, event.y)
+                }
+                MotionEvent.ACTION_UP -> {
+                    if (lastAction == MotionEvent.ACTION_DOWN) {
+                        onTouch(event.x, event.y)
+                    }
+                }
+
+            }
+
+            return true
+            
         } else if (event.pointerCount == 2) {
-            // compute zoom ratio from two pointers
-            val zoomRatio = (event.getX(1) - event.getX(0)) / (event.getY(1) - event.getY(0))
-            onZoom(zoomRatio)
+            val action: Int = MotionEventCompat.getActionMasked(event)
+
+            if (action == MotionEvent.ACTION_MOVE) {
+                val dx: Float = event.getX(1) - event.getX(0)
+                val dy: Float = event.getY(1) - event.getY(0)
+                val distance: Float = sqrt(dx * dx + dy * dy)
+
+                if (zooming) {
+                    currentZoomRatio = oldDistance/distance
+                    onZoom(currentZoomRatio)
+                } else {
+                    Log.d("yo", "first touch")
+                    zooming = true
+                    oldDistance = distance
+                    onZoomStart()
+                }
+            }
         }
 
-        return super.onTouchEvent(event)
+        return true
     }
+
 }
 
 

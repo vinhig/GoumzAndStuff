@@ -4,24 +4,28 @@
 namespace GoumzAndStuff {
 
 class Game;
+class InputHandler;
 
 namespace Rendering {
 
 enum TileType : char {
-  GRASS = 0,
-  DIRT = 1,
-  PATH_2WAY_LEFT = 2,
-  PATH_2WAY_UP = 3,
-  PATH_3WAY_LEFT = 4,
-  PATH_3WAY_RIGHT = 5,
-  PATH_3WAY_UP = 6,
-  PATH_3WAY_DOWN = 7,
-  PATH_4WAY = 8,
+  TILE_GRASS = 0,
+  TILE_DIRT = 1,
+  TILE_PATH_2WAY_LEFT = 2,
+  TILE_PATH_2WAY_UP = 3,
+  TILE_PATH_3WAY_LEFT = 4,
+  TILE_PATH_3WAY_RIGHT = 5,
+  TILE_PATH_3WAY_UP = 6,
+  TILE_PATH_3WAY_DOWN = 7,
+  TILE_PATH_4WAY = 8,
 };
 
 class World {
  private:
   TileType _tiles[16][16];
+
+  float _half_width;
+  float _half_height;
 
   unsigned int _tile_textures[9];
 
@@ -41,6 +45,9 @@ class World {
   unsigned int _tile_shader;
 
   Game* _game;
+  InputHandler* _move_camera_handler;
+
+  float _last_zoom{1.0f};
 
  public:
   World(Game* _used_game);
