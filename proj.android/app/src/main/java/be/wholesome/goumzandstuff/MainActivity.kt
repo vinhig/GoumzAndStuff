@@ -7,7 +7,9 @@ import android.content.res.AssetManager
 import android.opengl.GLSurfaceView
 import android.os.Bundle
 import android.util.Log
+import android.view.GestureDetector
 import android.view.MotionEvent
+import android.view.ScaleGestureDetector
 import android.view.View
 import androidx.core.view.MotionEventCompat
 import javax.microedition.khronos.egl.EGLConfig
@@ -37,7 +39,6 @@ class MyGLRenderer : GLSurfaceView.Renderer {
     }
 }
 
-
 class MyGLSurfaceView(context: Context) : GLSurfaceView(context) {
 
     private val renderer: MyGLRenderer
@@ -48,13 +49,22 @@ class MyGLSurfaceView(context: Context) : GLSurfaceView(context) {
 
     private var lastAction: Int = 0
 
+    private var lastX: Float = 0.0f
+    private var lastY: Float = 0.0f
+
+    external fun onTouch(state: Int, x: Float, y: Float)
+
+    external fun onDragStart()
+    external fun onDrag(x: Float, y: Float)
+    external fun onDragStop(x: Float, y: Float)
+
     external fun onZoomStart()
     external fun onZoom(delta: Float)
     external fun onZoomStop(delta: Float)
 
-    external fun onTouch(x: Float, y: Float)
+    private val scrollListener: GestureDetector;
 
-    external fun onDrag(x : Float, y: Float)
+    private val scaleListener: ScaleGestureDetector;
 
     init {
         debugFlags = GLSurfaceView.DEBUG_CHECK_GL_ERROR or GLSurfaceView.DEBUG_LOG_GL_CALLS
@@ -64,57 +74,43 @@ class MyGLSurfaceView(context: Context) : GLSurfaceView(context) {
 
         renderer = MyGLRenderer()
 
+        scrollListener = object : GestureDetector(this.context, object :
+            GestureDetector.SimpleOnGestureListener() {
+            override fun onScroll(
+                e1: MotionEvent?,
+                e2: MotionEvent?,
+                distanceX: Float,
+                distanceY: Float
+            ): Boolean {
+                onDrag(-distanceX / width, distanceY / height)
+                return true
+            }
+        }) {}
+
+        scaleListener =
+            object : ScaleGestureDetector(this.context, object : OnScaleGestureListener {
+                override fun onScaleBegin(p0: ScaleGestureDetector?): Boolean {
+                    onZoomStart()
+                    return true
+                }
+
+                override fun onScale(p0: ScaleGestureDetector): Boolean {
+                    onZoom(1.0f / p0.scaleFactor)
+                    return true
+                }
+
+                override fun onScaleEnd(p0: ScaleGestureDetector) {
+                    onZoomStop(1.0f / p0.scaleFactor)
+                }
+            }) {}
+
         // Set the Renderer for drawing on the GLSurfaceView
         setRenderer(renderer)
     }
 
     override fun onTouchEvent(event: MotionEvent): Boolean {
-
-        if (event.pointerCount == 1) {
-            if (zooming) {
-                onZoomStop(currentZoomRatio)
-                zooming = false
-            }
-            val action: Int = MotionEventCompat.getActionMasked(event)
-
-            when(action) {
-                MotionEvent.ACTION_DOWN -> {
-                    lastAction = MotionEvent.ACTION_DOWN
-                }
-                MotionEvent.ACTION_MOVE -> {
-                    lastAction = MotionEvent.ACTION_DOWN
-                    onDrag(event.x, event.y)
-                }
-                MotionEvent.ACTION_UP -> {
-                    if (lastAction == MotionEvent.ACTION_DOWN) {
-                        onTouch(event.x, event.y)
-                    }
-                }
-
-            }
-
-            return true
-            
-        } else if (event.pointerCount == 2) {
-            val action: Int = MotionEventCompat.getActionMasked(event)
-
-            if (action == MotionEvent.ACTION_MOVE) {
-                val dx: Float = event.getX(1) - event.getX(0)
-                val dy: Float = event.getY(1) - event.getY(0)
-                val distance: Float = sqrt(dx * dx + dy * dy)
-
-                if (zooming) {
-                    currentZoomRatio = oldDistance/distance
-                    onZoom(currentZoomRatio)
-                } else {
-                    Log.d("yo", "first touch")
-                    zooming = true
-                    oldDistance = distance
-                    onZoomStart()
-                }
-            }
-        }
-
+        scaleListener.onTouchEvent(event)
+        scrollListener.onTouchEvent(event)
         return true
     }
 

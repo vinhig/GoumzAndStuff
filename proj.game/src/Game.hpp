@@ -1,8 +1,11 @@
 #include <string>
 
+typedef struct lua_State lua_State;
+
 namespace GoumzAndStuff {
 
 class Input;
+class InputHandler;
 
 namespace Rendering {
 class Font;
@@ -42,6 +45,10 @@ class Game {
   float _frame_time{0.0f};
 
   Input* _input_manager{nullptr};
+
+  // Main Game Script Stuff
+  lua_State* _main_game_state{nullptr};
+  InputHandler* _main_game_input_handler{nullptr};
 
  public:
   Game(/* args */);

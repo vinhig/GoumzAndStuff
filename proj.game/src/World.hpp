@@ -38,16 +38,22 @@ class World {
   float _projection[4][4];
   // float _isometric_view[2][2];
 
-  unsigned int _projection_uniform;
-  unsigned int _view_uniform;
-  unsigned int _pos_uniform;
+  unsigned int _projection_uniform{0};
+  unsigned int _view_uniform{0};
+  unsigned int _pos_uniform{0};
+  unsigned int _offset_uniform{0};
+  unsigned int _zoom_uniform{0};
 
   unsigned int _tile_shader;
 
   Game* _game;
   InputHandler* _move_camera_handler;
 
+  float _last_x{0.0f};
+  float _last_y{0.0f};
   float _last_zoom{1.0f};
+
+  void compute_projection();
 
  public:
   World(Game* _used_game);
@@ -57,6 +63,8 @@ class World {
   void draw();
 
   void set_tile(unsigned int x, unsigned int y, TileType new_type);
+  void set_zoom(float new_zoom);
+  void set_position(float x, float y);
 };
 
 }  // namespace Rendering

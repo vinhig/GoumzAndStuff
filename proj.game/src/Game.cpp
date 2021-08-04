@@ -65,7 +65,6 @@ Java_be_wholesome_goumzandstuff_MainActivity_setAssetManager(
 extern "C" JNIEXPORT void JNICALL
 Java_be_wholesome_goumzandstuff_MyGLSurfaceView_onZoomStart(JNIEnv *env,
                                                             jobject thiz) {
-  GoumzAndStuff::Log::debug("zooooom");
   g_Game.input_manager()->zoom_start();
 }
 
@@ -73,7 +72,6 @@ extern "C" JNIEXPORT void JNICALL
 Java_be_wholesome_goumzandstuff_MyGLSurfaceView_onZoom(JNIEnv *env,
                                                        jobject thiz,
                                                        jfloat delta) {
-  GoumzAndStuff::Log::debug("zooooom");
   g_Game.input_manager()->zoom(static_cast<float>(delta));
 }
 
@@ -81,36 +79,45 @@ extern "C" JNIEXPORT void JNICALL
 Java_be_wholesome_goumzandstuff_MyGLSurfaceView_onZoomStop(JNIEnv *env,
                                                            jobject thiz,
                                                            jfloat delta) {
-  GoumzAndStuff::Log::debug("zooooom");
   g_Game.input_manager()->zoom_stop(static_cast<float>(delta));
 }
 
 extern "C" JNIEXPORT void JNICALL
 Java_be_wholesome_goumzandstuff_MyGLSurfaceView_onTouch(JNIEnv *env,
-                                                        jobject thiz, jfloat x,
+                                                        jobject thiz,
+                                                        jint state, jfloat x,
                                                         jfloat y) {
-  g_Game.input_manager()->touch(static_cast<float>(x), static_cast<float>(y));
+  g_Game.input_manager()->touch(static_cast<GoumzAndStuff::TouchState>(state),
+                                static_cast<float>(x), static_cast<float>(y));
+}
+
+extern "C" JNIEXPORT void JNICALL
+Java_be_wholesome_goumzandstuff_MyGLSurfaceView_onDragStart(JNIEnv *env,
+                                                            jobject thiz) {
+  GoumzAndStuff::Log::debug("drag");
+  g_Game.input_manager()->drag_start();
 }
 
 extern "C" JNIEXPORT void JNICALL
 Java_be_wholesome_goumzandstuff_MyGLSurfaceView_onDrag(JNIEnv *env,
                                                        jobject thiz, jfloat x,
                                                        jfloat y) {
-  // TODO: implement onDrag()
+  GoumzAndStuff::Log::debug("drag");
+  g_Game.input_manager()->drag(static_cast<float>(x), static_cast<float>(y));
+}
+
+extern "C" JNIEXPORT void JNICALL
+Java_be_wholesome_goumzandstuff_MyGLSurfaceView_onDragStop(JNIEnv *env,
+                                                           jobject thiz,
+                                                           jfloat x, jfloat y) {
+  GoumzAndStuff::Log::debug("drag");
+  g_Game.input_manager()->drag_stop(static_cast<float>(x),
+                                    static_cast<float>(y));
 }
 
 GoumzAndStuff::Game *get_game() { return &g_Game; }
 
 #endif
-
-// default error handling function for lua printing with Log
-static int lua_error_handler(lua_State *L) {
-  const char *msg = lua_tostring(L, 1);
-  if (msg) {
-    GoumzAndStuff::Log::error(msg);
-  }
-  return 1;
-}
 
 static void debug_output(GLenum source, GLenum type, GLuint id, GLenum severity,
                          GLsizei length, const GLchar *message,
@@ -203,17 +210,75 @@ void Game::create() {
                    std::chrono::system_clock::now().time_since_epoch())
                    .count();
 
-  lua_State *L = luaL_newstate();
-  luaopen_base(L);
+  _main_game_state = luaL_newstate();
+  luaopen_base(_main_game_state);
 
-  luaL_openlibs(L);
-  luaopen_GoumzAndStuff(L);
+  luaL_openlibs(_main_game_state);
+  luaopen_GoumzAndStuff(_main_game_state);
 
   auto script = read_file("scripts/main_game.lua");
 
-  luaL_loadbuffer(L, (const char *)script.data, script.size,
+  luaL_loadbuffer(_main_game_state, (const char *)script.data, script.size,
                   (const char *)script.data);
-  lua_call(L, 0, 0);
+
+  // get error handler lua function
+
+  if (lua_pcall(_main_game_state, 0, 0, 0) != 0) {
+    // print lua error
+    std::string error = lua_tostring(_main_game_state, -1);
+    Log::error(error);
+    lua_pop(_main_game_state, 1);
+  }
+
+  // lua_call(_main_game_state, 0, 0);
+
+  _main_game_input_handler = new InputHandler();
+
+  _main_game_input_handler->handle_zoom();
+  _main_game_input_handler->handle_touch();
+  _main_game_input_handler->handle_drag();
+
+  _main_game_input_handler->set_zoom_callback(
+      [this](ZoomState state, float zoom) {
+        lua_getglobal(this->_main_game_state, "on_zoom");
+        lua_pushinteger(this->_main_game_state, state);
+        lua_pushnumber(this->_main_game_state, zoom);
+
+        // lua_call(this->_main_game_state, 2, 0);
+        if (lua_pcall(_main_game_state, 2, 0, 0) != 0) {
+          Log::error("Error while executing script: " +
+                     std::string(lua_tostring(_main_game_state, -1)));
+        };
+      });
+
+  _main_game_input_handler->set_touch_callback(
+      [this](TouchState state, float x, float y) {
+        lua_getglobal(this->_main_game_state, "on_touch");
+        lua_pushinteger(this->_main_game_state, state);
+        lua_pushnumber(this->_main_game_state, x);
+        lua_pushnumber(this->_main_game_state, y);
+
+        if (lua_pcall(_main_game_state, 3, 0, 0) != 0) {
+          Log::error("Error while executing script: " +
+                     std::string(lua_tostring(_main_game_state, -1)));
+        };
+      });
+
+  _main_game_input_handler->set_drag_callback(
+      [this](DragState state, float delta_x, float delta_y) {
+        lua_getglobal(this->_main_game_state, "on_drag");
+        // Log::debug("state is " + std::to_string(state));
+        lua_pushinteger(this->_main_game_state, state);
+        lua_pushnumber(this->_main_game_state, delta_x);
+        lua_pushnumber(this->_main_game_state, delta_y);
+
+        if (lua_pcall(_main_game_state, 3, 0, 0) != 0) {
+          Log::error("Error while executing script: " +
+                     std::string(lua_tostring(_main_game_state, -1)));
+        };
+      });
+
+  _input_manager->register_handler(_main_game_input_handler);
 }
 
 void Game::reload() {}

@@ -7,6 +7,7 @@
 
 #include "Game.hpp"
 #include "Input.hpp"
+#include "Log.hpp"
 #include "Math.hpp"
 #include "OpenGLUtils.hpp"
 
@@ -54,6 +55,8 @@ World::World(Game* _used_game) {
     delete fragment_shader_source;
   }
 
+  _zoom_uniform = glGetUniformLocation(_tile_shader, "zoom");
+  _offset_uniform = glGetUniformLocation(_tile_shader, "offset");
   _pos_uniform = glGetUniformLocation(_tile_shader, "pos");
   _projection_uniform = glGetUniformLocation(_tile_shader, "projection");
   // _view_uniform = glGetUniformLocation(_tile_shader, "view");
@@ -77,7 +80,7 @@ World::World(Game* _used_game) {
 
   glDrawBuffers(1, attachments);
 
-  memset(_tiles, DIRT, 16 * 16);
+  memset(_tiles, TILE_GRASS, 16 * 16);
 
   // load shitton of textures
   File current_texture = _used_game->read_file("textures/world/grass.png");
@@ -154,7 +157,7 @@ World::World(Game* _used_game) {
   glVertexAttribPointer(1, 2, GL_FLOAT, false, 4 * 4, (const void*)(2 * 4));
   glBindBuffer(GL_ARRAY_BUFFER, 0);
 
-  _move_camera_handler = new InputHandler();
+  /*_move_camera_handler = new InputHandler();
 
   _move_camera_handler->handle_zoom();
   _move_camera_handler->set_zoom_callback([this](ZoomState state, float zoom) {
@@ -173,7 +176,13 @@ World::World(Game* _used_game) {
       Math::matrix_multiply(&a[0][0], &b[0][0], &_projection[0][0]);
     }
   });
-  _used_game->input_manager()->register_handler(_move_camera_handler);
+  _move_camera_handler->handle_drag();
+  _move_camera_handler->set_touch_callback(
+      [this](TouchState state, float x, float y) {
+
+      });
+  // _used_game->input_manager()->register_handler(_move_camera_handler);
+  */
 }
 
 World::~World() {
@@ -190,6 +199,8 @@ void World::pre_draw() {
   glUseProgram(_tile_shader);
   glBindVertexArray(_vao);
 
+  // glUniform1f(_zoom_uniform, _last_zoom);
+  glUniform2f(_offset_uniform, _last_x, _last_y);
   glUniformMatrix4fv(_projection_uniform, 1, false, &_projection[0][0]);
 
   float pos[2] = {-8.0f * 2.1f, -8.0f * 2.1f};
@@ -221,6 +232,29 @@ void World::draw() {
 
 void World::set_tile(unsigned int x, unsigned y, TileType new_type) {
   _tiles[x][y] = new_type;
+}
+
+void World::set_zoom(float new_zoom) {
+  _last_zoom = new_zoom;
+
+  compute_projection();
+}
+
+void World::set_position(float x, float y) {
+  _last_x = x;
+  _last_y = y;
+}
+
+void World::compute_projection() {
+  auto a = glm::ortho(-_half_width / 100.0f * _last_zoom,
+                      _half_width / 100.0f * _last_zoom,
+                      -_half_height / 100.0f * _last_zoom,
+                      _half_height / 100.0f * _last_zoom, -100.0f, 100.0f);
+  auto b =
+      glm::lookAt(glm::vec3(1.0f, -1.0f, 1.0f), glm::vec3(0.0f, 0.0f, 0.0f),
+                  glm::vec3(0.0f, -1.0f, 0.0f));
+
+  Math::matrix_multiply(&a[0][0], &b[0][0], &_projection[0][0]);
 }
 
 }  // namespace Rendering

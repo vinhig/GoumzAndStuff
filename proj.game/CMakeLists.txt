@@ -26,6 +26,7 @@ find_library(log-lib log)
 
 target_link_libraries(GoumzAndStuffGame ${log-lib} -lGLESv3 -landroid freetype lua)
 
+target_include_directories(GoumzAndStuffGame PUBLIC src/)
 target_include_directories(GoumzAndStuffGame PUBLIC libs/freetype/include)
 target_include_directories(GoumzAndStuffGame PUBLIC libs)
 target_include_directories(GoumzAndStuffGame PUBLIC libs/lua)
