@@ -106,6 +106,11 @@ class MyGLSurfaceView(context: Context) : GLSurfaceView(context) {
 
         // Set the Renderer for drawing on the GLSurfaceView
         setRenderer(renderer)
+
+        val w = width
+        val h = height
+
+        val wh = w + h
     }
 
     override fun onTouchEvent(event: MotionEvent): Boolean {

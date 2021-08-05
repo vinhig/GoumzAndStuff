@@ -3,7 +3,7 @@ typedef unsigned int GLenum;
 namespace GoumzAndStuff {
 namespace Rendering {
 
-unsigned int compile_shader(const char* source, GLenum shaderType);
+unsigned int compile_shader(const char* source, const int size, GLenum shaderType);
 
 /**
  * Load image with stb_image and create corresponding texture.

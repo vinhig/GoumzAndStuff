@@ -16,4 +16,3 @@ void main() {
   gl_Position = (projection * vec4(new_pos.x, 0.0, new_pos.y, 1.0)) + vec4(offset.x, offset.y, 0.0, 0.0);
   o_tex_coord = tex_coord;
 }
-//

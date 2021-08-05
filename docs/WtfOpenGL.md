@@ -8,3 +8,4 @@ A list of weird OpenGL characteristics discovered while developing this engine :
 * The same texture creation path doesn't produce the same texture with OpenGL 3.3 and OpenGL ES 3.2... The internal format somewhat changed. I had to put some `if` there and there... 
 * RenderDoc crashes if you delete an object that isn't initialised, but the application doesn't if you don't attach the debugger :
     * `unsigned int framebuffer; /*not initialised*/ glDeleteFramebuffers(1, &framebuffer);`
+* Some mobile drivers doesn't want their shaders last line to be a comment. Wtf ????

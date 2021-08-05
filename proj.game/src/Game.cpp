@@ -41,7 +41,7 @@ static AAssetManager *g_AssetManager;
 extern "C" JNIEXPORT void JNICALL
 Java_be_wholesome_goumzandstuff_MyGLRenderer_onSurfaceCreated(
     JNIEnv *env, jobject /* this */) {
-  g_Game.create();
+    g_Game.create();
 }
 
 extern "C" JNIEXPORT void JNICALL

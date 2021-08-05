@@ -98,13 +98,16 @@ Font::Font(GoumzAndStuff::Game* _game, const std::string& font_path) {
 
   {
     auto vertex_shader_source =
-        (char*)(_game->read_file("shaders/text_shader.vert.glsl").data);
+        _game->read_file("shaders/text_shader.vert.glsl");
     auto fragment_shader_source =
-        (char*)(_game->read_file("shaders/text_shader.frag.glsl").data);
+        _game->read_file("shaders/text_shader.frag.glsl");
 
-    auto vertex_shader = compile_shader(vertex_shader_source, GL_VERTEX_SHADER);
+    auto vertex_shader =
+        compile_shader((const char*)vertex_shader_source.data,
+                       vertex_shader_source.size, GL_VERTEX_SHADER);
     auto fragment_shader =
-        compile_shader(fragment_shader_source, GL_FRAGMENT_SHADER);
+        compile_shader((const char*)fragment_shader_source.data,
+                       fragment_shader_source.size, GL_FRAGMENT_SHADER);
 
     _text_shader = glCreateProgram();
     glAttachShader(_text_shader, vertex_shader);
@@ -112,18 +115,21 @@ Font::Font(GoumzAndStuff::Game* _game, const std::string& font_path) {
     glLinkProgram(_text_shader);
     glDeleteShader(vertex_shader);
     glDeleteShader(fragment_shader);
-    delete vertex_shader_source;
-    delete fragment_shader_source;
+    delete vertex_shader_source.data;
+    delete fragment_shader_source.data;
   }
   {
     auto vertex_shader_source =
-        (char*)(_game->read_file("shaders/div_shader.vert.glsl").data);
+        _game->read_file("shaders/div_shader.vert.glsl");
     auto fragment_shader_source =
-        (char*)(_game->read_file("shaders/div_shader.frag.glsl").data);
+        _game->read_file("shaders/div_shader.frag.glsl");
 
-    auto vertex_shader = compile_shader(vertex_shader_source, GL_VERTEX_SHADER);
+    auto vertex_shader =
+        compile_shader((const char*)vertex_shader_source.data,
+                       vertex_shader_source.size, GL_VERTEX_SHADER);
     auto fragment_shader =
-        compile_shader(fragment_shader_source, GL_FRAGMENT_SHADER);
+        compile_shader((const char*)fragment_shader_source.data,
+                       fragment_shader_source.size, GL_FRAGMENT_SHADER);
 
     _div_shader = glCreateProgram();
     glAttachShader(_div_shader, vertex_shader);
@@ -131,8 +137,8 @@ Font::Font(GoumzAndStuff::Game* _game, const std::string& font_path) {
     glLinkProgram(_div_shader);
     glDeleteShader(vertex_shader);
     glDeleteShader(fragment_shader);
-    delete vertex_shader_source;
-    delete fragment_shader_source;
+    delete vertex_shader_source.data;
+    delete fragment_shader_source.data;
   }
 }
 

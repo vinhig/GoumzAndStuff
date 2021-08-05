@@ -10,10 +10,10 @@
 namespace GoumzAndStuff {
 namespace Rendering {
 
-unsigned int compile_shader(const char* source, GLenum shaderType) {
+unsigned int compile_shader(const char* source, const int size, GLenum shaderType) {
   // Compile shader
   unsigned int shader = glCreateShader(shaderType);
-  glShaderSource(shader, 1, &source, nullptr);
+  glShaderSource(shader, 1, &source, &size);
   glCompileShader(shader);
 
   // Check result
@@ -21,7 +21,7 @@ unsigned int compile_shader(const char* source, GLenum shaderType) {
   int info_length;
   glGetShaderiv(shader, GL_COMPILE_STATUS, &result);
   glGetShaderiv(shader, GL_INFO_LOG_LENGTH, &info_length);
-  if (info_length > 0) {
+  if (info_length > 0 && result != GL_TRUE) {
     char* error_msg = new char[info_length + 1];
     glGetShaderInfoLog(shader, info_length, nullptr, &error_msg[0]);
     Log::debug(std::string(source));

@@ -41,7 +41,7 @@ class Game {
 
   float _frame{0.0f};
 
-  unsigned long _last_time{0};
+  long long _last_time{0};
   float _frame_time{0.0f};
 
   Input* _input_manager{nullptr};

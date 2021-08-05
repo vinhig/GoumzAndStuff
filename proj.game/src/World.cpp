@@ -37,13 +37,16 @@ World::World(Game* _used_game) {
   int f = 2;
   {
     auto vertex_shader_source =
-        (char*)(_used_game->read_file("shaders/tile_shader.vert.glsl").data);
+        _game->read_file("shaders/tile_shader.vert.glsl");
     auto fragment_shader_source =
-        (char*)(_used_game->read_file("shaders/tile_shader.frag.glsl").data);
+        _game->read_file("shaders/tile_shader.frag.glsl");
 
-    auto vertex_shader = compile_shader(vertex_shader_source, GL_VERTEX_SHADER);
+    auto vertex_shader =
+        compile_shader((const char*)vertex_shader_source.data,
+                       vertex_shader_source.size, GL_VERTEX_SHADER);
     auto fragment_shader =
-        compile_shader(fragment_shader_source, GL_FRAGMENT_SHADER);
+        compile_shader((const char*)fragment_shader_source.data,
+                       fragment_shader_source.size, GL_FRAGMENT_SHADER);
 
     _tile_shader = glCreateProgram();
     glAttachShader(_tile_shader, vertex_shader);
@@ -51,8 +54,8 @@ World::World(Game* _used_game) {
     glLinkProgram(_tile_shader);
     glDeleteShader(vertex_shader);
     glDeleteShader(fragment_shader);
-    delete vertex_shader_source;
-    delete fragment_shader_source;
+    delete vertex_shader_source.data;
+    delete fragment_shader_source.data;
   }
 
   _zoom_uniform = glGetUniformLocation(_tile_shader, "zoom");
